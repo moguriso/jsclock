@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アナログ時計 + デジタル表示 + カレンダー</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        canvas {
+            background-color: white;
+            border: 2px solid green;
+        }
+        #calendar-container {
+            margin-top: 20px;
+            width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #calendar-controls {
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid black;
+            width: 14%;
+            text-align: center;
+            padding: 3px;
+            position: relative;
+        }
+        th {
+            background-color: lightgray;
+        }
+        .today {
+            background-color: yellow;
+        }
+        .sunday {
+            color: red;
+        }
+        .saturday {
+            color: blue;
+        }
+        .holiday {
+            color: red;
+        }
+        .holiday-name {
+            font-size: 8px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="clockCanvas" width="300" height="300"></canvas>
+    
+    <div id="calendar-container">
+        <div id="calendar-controls">
+            <button id="prevMonth" onclick="changeMonth(-1)">◀</button>
+            <span id="calendar-title"></span>
+            <button id="nextMonth" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div id="calendar"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("clockCanvas");
+        const ctx = canvas.getContext("2d");
+        const radius = canvas.width / 2;
+        let currentDate = new Date();
+
+        function drawClock() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFace();
+            drawNumbers();
+            drawTime();
+            drawDigitalTime();
+            requestAnimationFrame(drawClock);
+        }
+
+        function drawFace() {
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius - 5, 0, 2 * Math.PI);
+            ctx.strokeStyle = "green";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            let digitalX = radius - 50;
+            let digitalY = radius - 90;
+            ctx.fillStyle = "blue";
+            ctx.fillRect(digitalX, digitalY, 100, 30);
+        }
+
+        function drawNumbers() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            for (let num = 1; num <= 12; num++) {
+                let angle = (num - 3) * (Math.PI / 6);
+                let x = radius + Math.cos(angle) * (radius - 25);
+                let y = radius + Math.sin(angle) * (radius - 25);
+                ctx.fillText(num, x, y);
+            }
+        }
+
+        function drawTime() {
+            const now = new Date();
+            let hour = now.getHours() % 12;
+            let minute = now.getMinutes();
+            let second = now.getSeconds();
+
+            let hourAngle = (hour * Math.PI) / 6 + (minute * Math.PI) / 360;
+            let minuteAngle = (minute * Math.PI) / 30;
+            let secondAngle = (second * Math.PI) / 30;
+
+            drawHand(hourAngle, radius * 0.5, 6, "black");
+            drawHand(minuteAngle, radius * 0.7, 4, "black");
+            drawHand(secondAngle, radius * 0.8, 2, "green");
+        }
+
+        function drawHand(angle, length, width, color) {
+            ctx.beginPath();
+            ctx.lineWidth = width;
+            ctx.strokeStyle = color;
+            ctx.lineCap = "round";
+            ctx.moveTo(radius, radius);
+            ctx.lineTo(radius + Math.cos(angle - Math.PI / 2) * length, radius + Math.sin(angle - Math.PI / 2) * length);
+            ctx.stroke();
+        }
+
+        function drawDigitalTime() {
+            const now = new Date();
+            let hours = String(now.getHours()).padStart(2, "0");
+            let minutes = String(now.getMinutes()).padStart(2, "0");
+            let seconds = String(now.getSeconds()).padStart(2, "0");
+
+            let digitalX = radius;
+            let digitalY = radius - 73;
+
+            ctx.fillStyle = "white";
+            ctx.font = "18px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(`${hours}:${minutes}:${seconds}`, digitalX, digitalY);
+        }
+
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            drawCalendar();
+        }
+        const holidays = {
+            "2025-01-01": "元日",
+            "2025-01-13": "成人の日",
+            "2025-02-11": "建国記念の日",
+            "2025-02-23": "天皇誕生日",
+            "2025-03-20": "春分の日",
+            "2025-04-29": "昭和の日",
+            "2025-05-03": "憲法記念日",
+            "2025-05-04": "みどりの日",
+            "2025-05-05": "こどもの日",
+            "2025-07-21": "海の日",
+            "2025-08-11": "山の日",
+            "2025-09-15": "敬老の日",
+            "2025-09-23": "秋分の日",
+            "2025-10-13": "スポーツの日",
+            "2025-11-03": "文化の日",
+            "2025-11-23": "勤労感謝の日",
+            "2025-12-23": "天皇誕生日"
+        };
+        function drawCalendar() {
+            const calendarDiv = document.getElementById("calendar");
+            calendarDiv.innerHTML = "";
+
+            let year = currentDate.getFullYear();
+            let month = currentDate.getMonth();
+            let firstDay = new Date(year, month, 1).getDay();
+            let daysInMonth = new Date(year, month + 1, 0).getDate();
+            let today = new Date();
+            let isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+
+            document.getElementById("calendar-title").textContent = `${year}年 ${month + 1}月`;
+            
+            let table = document.createElement("table");
+            let headerRow = document.createElement("tr");
+            ["日", "月", "火", "水", "木", "金", "土"].forEach(day => {
+                let th = document.createElement("th");
+                th.textContent = day;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            let row = document.createElement("tr");
+            for (let i = 0; i < firstDay; i++) {
+                row.appendChild(document.createElement("td"));
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                let cell = document.createElement("td");
+                cell.textContent = day;
+                let dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                let weekDay = new Date(year, month, day).getDay();
+                
+                if (weekDay === 0) {
+                    cell.classList.add("sunday");
+                } else if (weekDay === 6) {
+                    cell.classList.add("saturday");
+                }
+                
+                if (holidays[dateStr]) {
+                    cell.classList.add("holiday");
+                    let holidayName = document.createElement("span");
+                    holidayName.textContent = holidays[dateStr];
+                    holidayName.classList.add("holiday-name");
+                    cell.appendChild(holidayName);
+                }
+                if (isCurrentMonth && day === today.getDate()) {
+                    cell.classList.add("today");
+                }
+                row.appendChild(cell);
+                if ((firstDay + day) % 7 === 0) {
+                    table.appendChild(row);
+                    row = document.createElement("tr");
+                }
+            }
+            if (row.children.length > 0) table.appendChild(row);
+            calendarDiv.appendChild(table);
+        }
+
+        drawClock();
+        drawCalendar();
+    </script>
+</body>
+</html>
