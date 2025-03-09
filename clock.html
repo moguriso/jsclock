@@ -11,6 +11,7 @@
         canvas {
             background-color: white;
             border: 2px solid green;
+            cursor: pointer;
         }
         #calendar-container {
             margin-top: 20px;
@@ -146,6 +147,19 @@
             ctx.textAlign = "center";
             ctx.fillText(`${hours}:${minutes}:${seconds}`, digitalX, digitalY);
         }
+
+        canvas.addEventListener("click", () => {
+            fetch("http://localhost:31234/lock", {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ action: "lock" })
+            })
+            .then(response => console.log("POST request sent successfully"))
+            .catch(error => console.error("Error sending POST request:", error));
+        });
 
         function changeMonth(offset) {
             currentDate.setMonth(currentDate.getMonth() + offset);
